@@ -1,0 +1,20 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      # The model files are pinned in src/thought_steering, so its hash keys the cache.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ hashFiles('src/thought_steering/*.py') }}
+      - run: uv run pytest
+      - run: uv run thought-steering chat "I failed my driving test again. I'll never be able to drive." --strength 0.3 --max-tokens 24

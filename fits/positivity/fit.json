@@ -1,0 +1,21 @@
+{
+ "fingerprint": {
+  "schema": 3,
+  "data_sha256": "86d1234c3f650de0d1af2c07164cc46bf73a7ce01549a84b4abf013dfa7d7bf8",
+  "model": "Qwen/Qwen3.5-0.8B",
+  "identity": "2fc06364715b967f1860aea9cf38778875588b17",
+  "template_sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+  "tokenizer_sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+  "enable_thinking": false,
+  "site": "decoder block output, before the final norm",
+  "extraction": "final candidate token; calibration at final prefix token",
+  "graph": "onnx-community/Qwen3.5-0.8B-ONNX-OPT@fafab72d87a9e6be3925b38caf48286d2838f2d0",
+  "variant": "q4f16",
+  "surgery": 5,
+  "runtime": "onnxruntime 1.30.0 CPU"
+ },
+ "groups": 164,
+ "rows": 203,
+ "forwards": 406,
+ "context_prefixes": 164
+}

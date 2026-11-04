@@ -1,0 +1,25 @@
+[project]
+name = "thought-steering"
+version = "1.0.0"
+description = "Contrastive activation steering that sets how much a language model reframes negative thoughts."
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "huggingface-hub>=2.4.0",  # downloads the pairs, the tokenizer and the ONNX graph
+    "jinja2>=3.1.6",  # renders the chat template
+    "numpy>=2.5.4",  # activations, directions and logits
+    "onnx>=1.23.2",  # edits the graph to take the steering input
+    "onnxruntime>=1.31.1",  # runs the graph on the CPU
+    "safetensors>=0.8.0",  # the fits' file format, which the page reads
+    "tokenizers>=0.23.3",  # the model's tokenizer
+]
+
+[project.scripts]
+thought-steering = "thought_steering.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=9.2.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

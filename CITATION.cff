@@ -1,0 +1,56 @@
+cff-version: 1.2.0
+message: "Please cite thought steering if you use it."
+type: software
+title: "thought steering: activation steering for cognitive reframing"
+abstract: >-
+  Contrastive activation steering that sets how much a language model reframes negative thoughts.
+authors:
+  - family-names: Cortal
+    given-names: Gustave
+repository-code: "https://github.com/gustavecortal/thought-steering"
+url: "https://gustavecortal.com/thought-steering/"
+license: MIT
+date-released: "2026-11-04"
+keywords:
+  - activation steering
+  - contrastive activation addition
+  - cognitive reframing
+  - language models
+  - ONNX Runtime
+  - Qwen3.5
+references:
+  - type: conference-paper
+    title: "Steering Llama 2 via Contrastive Activation Addition"
+    authors:
+      - family-names: Rimsky
+        given-names: Nina
+      - family-names: Gabrieli
+        given-names: Nick
+      - family-names: Schulz
+        given-names: Julian
+      - family-names: Tong
+        given-names: Meg
+      - family-names: Hubinger
+        given-names: Evan
+      - family-names: Turner
+        given-names: Alexander
+    collection-title: "Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+    year: 2024
+    url: "https://aclanthology.org/2024.acl-long.828/"
+  - type: article
+    title: "Steering Language Models With Activation Engineering"
+    authors:
+      - family-names: Turner
+        given-names: Alexander Matt
+      - name: "et al."
+    year: 2023
+    url: "https://arxiv.org/abs/2308.10248"
+  - type: conference-paper
+    title: "Cognitive Reframing of Negative Thoughts through Human-Language Model Interaction"
+    authors:
+      - family-names: Sharma
+        given-names: Ashish
+      - name: "et al."
+    collection-title: "Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+    year: 2023
+    url: "https://aclanthology.org/2023.acl-long.555/"
