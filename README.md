@@ -64,7 +64,7 @@ uv run thought-steering pairs
 uv run thought-steering fit reframe
 ```
 
-`pairs` downloads the dataset and writes the contrast data to `data/`. `fit` reads it through the steered graph and overwrites `fits/reframe/`. It takes under 4 minutes on the same processor. Its `fit.safetensors` is byte for byte the file the live demo uses (checked with ONNX Runtime 1.30 and 1.31). Its `fit.json` records the ONNX Runtime version you ran. `fit` also takes the attribute names, such as `fit empathy`.
+`pairs` downloads the dataset and writes the contrast data to `data/`. `fit` reads it through the steered graph and overwrites `fits/reframe/`. It takes under 4 minutes on the same processor. On the processor above, its `fit.safetensors` is byte for byte the file the live demo uses (checked with ONNX Runtime 1.30 and 1.31). Other processors may differ in the last bits. Its `fit.json` records the ONNX Runtime version you ran. `fit` also takes the attribute names, such as `fit empathy`.
 
 ## License
 

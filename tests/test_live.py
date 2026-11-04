@@ -84,7 +84,11 @@ def test_steered_model_matches_the_page_self_check(tokenizer):
     assert ids == check["ids"]
     runner = graph.Runner("q4f16")
     logits, blocks, state = runner.prefill(ids)
-    np.testing.assert_allclose(blocks[:, :64], check["blocks"], atol=1e-4)
+    # By cosine per block, as the page's own check does (it stops below 0.98): CPU kernels differ between processors
+    # in the last bits.
+    reference = np.asarray(check["blocks"])
+    cosines = (blocks[:, :64] * reference).sum(1) / np.linalg.norm(blocks[:, :64], axis=1) / np.linalg.norm(reference, axis=1)
+    assert cosines.min() >= 0.999, cosines.min()
     tokens = []
     for _ in check["tokens"]:
         tokens.append(int(logits.argmax()))
