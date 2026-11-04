@@ -8,6 +8,7 @@ is that sum inside block l+1's input norm, or inside the final norm for the last
 the last position of each call as `block_outputs` [batch, blocks, hidden].
 """
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -20,18 +21,21 @@ REVISION = "fafab72d87a9e6be3925b38caf48286d2838f2d0"
 VARIANTS = ["q4f16", "q4"]  # q4f16 computes in 16-bit floats, and the page uses q4 on GPUs without them
 BLOCKS, WIDTH = 24, 1024
 SURGERY = 5  # the version of steered_decoder, recorded in the fits and in the live graph's file name
+# The model's files as plain files in one folder: ONNX Runtime refuses external weights reached through the symbolic
+# links of the Hugging Face cache, which point outside the model's folder on Linux and macOS.
+MODELS = Path(os.environ.get("THOUGHT_STEERING_MODELS", Path.home() / ".cache" / "thought-steering")) / REVISION
 
 
 def fetch(name):
     """A file of the ONNX repository and its external weights (name + "_data"); returns the file's path."""
-    hf_hub_download(REPO, name + "_data", revision=REVISION)
-    return hf_hub_download(REPO, name, revision=REVISION)
+    hf_hub_download(REPO, name + "_data", revision=REVISION, local_dir=MODELS)
+    return hf_hub_download(REPO, name, revision=REVISION, local_dir=MODELS)
 
 
 def steered_decoder(variant="q4f16", path=None):
     """The steered decoder graph, without loading its weights: they stay in the upstream external-data file, at the
     same offsets."""
-    path = path or hf_hub_download(REPO, f"onnx/decoder_model_merged_{variant}.onnx", revision=REVISION)
+    path = path or hf_hub_download(REPO, f"onnx/decoder_model_merged_{variant}.onnx", revision=REVISION, local_dir=MODELS)
     model = onnx.load(path, load_external_data=False)
     graph = model.graph
     graph.input.append(helper.make_tensor_value_info("steering", TensorProto.FLOAT, [BLOCKS, WIDTH]))

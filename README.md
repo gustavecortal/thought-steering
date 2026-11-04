@@ -17,7 +17,7 @@ uv run thought-steering chat "I failed my driving test again. Maybe I just can't
 uv run thought-steering chat "I failed my driving test again. Maybe I just can't learn things." --strength 0
 ```
 
-The first run downloads the 4-bit model from Hugging Face (0.58 GB). Replies then run on the CPU, about 6 tokens a second on a 16-thread desktop processor. Both replies use the same seed, so the second is the unsteered reply the first is compared with.
+The first run downloads the 4-bit model from Hugging Face (0.58 GB) into `~/.cache/thought-steering`. Replies then run on the CPU, about 6 tokens a second on a 16-thread desktop processor. Both replies use the same seed, so the second is the unsteered reply the first is compared with.
 
 - Negative strengths steer away from reframing. The clip above uses +0.6 and -0.3, since at -0.6 its reply lost coherence.
 - `--blocks 12 16` steers two blocks.
