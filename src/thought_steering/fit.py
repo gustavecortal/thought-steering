@@ -31,18 +31,27 @@ def side_mean(side, h):
     return h(side) if isinstance(side, str) else sum(side_mean(s, h) for s in side) / len(side)
 
 
+def data_sha256(data):
+    """The hash the fits record for a contrast data file: its rows joined with CRLF line endings, as the live fits'
+    files were written on Windows, so the same rows give the same hash on any system."""
+    lines = [line.rstrip(b"\r") for line in data.split(b"\n") if line.strip()]
+    return hashlib.sha256(b"".join(line + b"\r\n" for line in lines)).hexdigest()
+
+
 def estimate(rows, tokenizer, runner):
     """{directions [blocks, hidden], norms [blocks], reference [blocks]} (float32), the number of texts read and of
     distinct contexts."""
-    differences, context_norms, forwards = {}, {}, 0
+    differences, context_norms, prefills, forwards = {}, {}, {}, 0
     for row in rows:
-        prefix = tokenizer.prompt(row["context"])
-        _, context_state, state = runner.step(prefix, runner.empty())
+        prefix = tuple(tokenizer.prompt(row["context"]))
+        if prefix not in prefills:  # rows that share a context read it once
+            prefills[prefix] = runner.step(list(prefix), runner.empty())[1:]
+        context_state, state = prefills[prefix]
         texts = list(dict.fromkeys(leaves(row["negative"]) + leaves(row["positive"])))  # each text once
         # Each text is decoded after the same context state, unsteered.
         h = {text: runner.step(tokenizer.encode(text), state)[1] for text in texts}
         forwards += len(texts)
-        context_norms.setdefault(tuple(prefix), np.linalg.norm(context_state, axis=-1))
+        context_norms.setdefault(prefix, np.linalg.norm(context_state, axis=-1))
         differences.setdefault(row["group_id"], []).append(
             side_mean(row["positive"], h.__getitem__) - side_mean(row["negative"], h.__getitem__))
     groups = differences.values()
@@ -55,14 +64,14 @@ def estimate(rows, tokenizer, runner):
     return {"directions": directions, "norms": norms, "reference": reference}, forwards, len(context_norms)
 
 
-def fit(data, out, variant="q4f16"):
+def fit(data, out, variant="q4f16", tokenizer=None, runner=None):
     """Fits the data file's direction and writes out/fit.safetensors and out/fit.json."""
     data = Path(data).read_bytes()
     rows = [json.loads(line) for line in data.decode("utf-8").split("\n") if line.strip()]
-    tokenizer = Tokenizer()
-    tensors, forwards, contexts = estimate(rows, tokenizer, graph.Runner(variant))
+    tokenizer = tokenizer or Tokenizer()
+    tensors, forwards, contexts = estimate(rows, tokenizer, runner or graph.Runner(variant))
     # The live fits' manifest: what the fit read, and the counts.
-    fingerprint = {"schema": 3, "data_sha256": hashlib.sha256(data).hexdigest(), "model": MODEL, "identity": REVISION,
+    fingerprint = {"schema": 3, "data_sha256": data_sha256(data), "model": MODEL, "identity": REVISION,
                    **tokenizer.sha256, "enable_thinking": False, "site": "decoder block output, before the final norm",
                    "extraction": "final candidate token; calibration at final prefix token",
                    "graph": f"{graph.REPO}@{graph.REVISION}", "variant": variant, "surgery": 5,

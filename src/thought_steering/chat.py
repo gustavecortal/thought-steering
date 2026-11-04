@@ -16,8 +16,8 @@ BLOCK = 12  # one-based
 
 def steering(terms, blocks=(BLOCK,)):
     """The additions [blocks, hidden] of fits at strengths, terms = [(fit folder, strength)]: strength * R[l] *
-    v[l] / |v[l]| at each chosen one-based block, summed over fits; None when every strength is 0. Computed in
-    double precision and rounded to float32, as on the page."""
+    v[l] / |v[l]| at each chosen one-based block, summed over fits; None when every strength is 0. Each fit's term is
+    added in double precision and the sum rounded to float32, as the page's Float32Array does."""
     if not blocks or len(set(blocks)) != len(blocks) or not all(1 <= b <= BLOCKS for b in blocks):
         raise ValueError(f"choose distinct blocks from 1 to {BLOCKS}")
     if all(strength == 0 for _, strength in terms):

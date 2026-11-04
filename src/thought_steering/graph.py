@@ -18,7 +18,7 @@ from onnx import TensorProto, helper, numpy_helper
 
 REPO = "onnx-community/Qwen3.5-0.8B-ONNX-OPT"
 REVISION = "fafab72d87a9e6be3925b38caf48286d2838f2d0"
-VARIANTS = ["q4f16", "q4"]  # q4f16 computes in 16-bit floats; the page uses q4 on GPUs without them
+VARIANTS = ["q4f16", "q4"]  # q4f16 computes in 16-bit floats, and the page uses q4 on GPUs without them
 BLOCKS, WIDTH = 24, 1024
 # The live page's graph file name: the version of the surgery (5) and the revision it edits.
 LIVE_NAME = "decoder_model_merged_{variant}_steered_" + REVISION[:8] + "_s5.onnx"

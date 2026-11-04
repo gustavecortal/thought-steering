@@ -1,6 +1,5 @@
 """Checks against the live page's files. The steered-model test downloads the 0.58 GB model once."""
 
-import hashlib
 import json
 from pathlib import Path
 
@@ -9,7 +8,8 @@ import pytest
 
 from thought_steering import graph
 from thought_steering.chat import sampler
-from thought_steering.pairs import ATTRIBUTES, attribute_rows, read_pairs, reframe_rows
+from thought_steering.fit import data_sha256
+from thought_steering.pairs import build
 from thought_steering.prompt import Tokenizer
 
 HERE = Path(__file__).parent
@@ -39,13 +39,10 @@ def test_steered_graph_is_the_live_one(variant):
     assert graph.live_sha256(graph.steered_decoder(variant), variant) == LIVE_GRAPHS[variant]
 
 
-def test_contrast_data_is_what_the_live_fits_read(tokenizer):
-    """The live files were written on Windows, with CRLF line endings, so the rows are joined that way here."""
-    pairs = read_pairs()
-    sets = {"reframe": reframe_rows(pairs, tokenizer)} | {a: attribute_rows(pairs, tokenizer, a) for a in ATTRIBUTES}
-    for name, rows in sets.items():
-        data = "".join(json.dumps(r, ensure_ascii=False) + "\r\n" for r in rows).encode("utf-8")
-        assert hashlib.sha256(data).hexdigest() == LIVE_DATA[name], name
+def test_contrast_data_is_what_the_live_fits_read(tmp_path):
+    """The files `pairs` writes hash, as fit.json records them, to the live fits' data_sha256."""
+    for path in build(tmp_path):
+        assert data_sha256(path.read_bytes()) == LIVE_DATA[path.stem], path.stem
 
 
 def test_sampler_draws_the_page_tokens():

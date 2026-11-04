@@ -51,7 +51,9 @@ def reframe_rows(pairs, tokenizer, situations=128, seed=0, tolerance=0.15):
     for pair in pairs:
         situation, thought = pair["situation"], pair["thought"]
         by_id[situation["id"]], thoughts[thought["id"]] = situation, thought["text"]
-        length = lengths.setdefault(thought["id"], len(tokenizer.encode(thought["text"])))
+        if thought["id"] not in lengths:
+            lengths[thought["id"]] = len(tokenizer.encode(thought["text"]))
+        length = lengths[thought["id"]]
         texts = [pair[side] for side in ("less", "more")
                  if abs(len(tokenizer.encode(pair[side])) - length) <= tolerance * length]
         if texts:  # a single kept variant stands in for its pair
@@ -66,13 +68,14 @@ def reframe_rows(pairs, tokenizer, situations=128, seed=0, tolerance=0.15):
         rng.shuffle(domains[domain])
     chosen = [s for turn in zip_longest(*(domains[d] for d in sorted(domains))) for s in turn if s][:situations]
 
+    by_situation = defaultdict(list)
+    for (s, thought_id), attributes in sorted(kept.items()):
+        by_situation[s].append((thought_id, attributes))
     rows = []
-    for situation_id in chosen:
-        for (s, thought_id), attributes in sorted(kept.items()):
-            if s != situation_id:
-                continue
+    for s in chosen:
+        for thought_id, attributes in by_situation[s]:
             ordered = [sorted(by_pair.items()) for _, by_pair in sorted(attributes.items())]
-            rows.append({"id": thought_id, "group_id": situation_id,
+            rows.append({"id": thought_id, "group_id": s,
                          "context": context(by_id[s]), "negative": thoughts[thought_id],
                          "positive": [[texts for _, texts in pairs_] for pairs_ in ordered],
                          "provenance": {"domain": by_id[s]["domain"], "attributes": sorted(attributes),
