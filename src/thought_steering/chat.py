@@ -1,35 +1,12 @@
 """Steered replies with the page's sampler."""
 
 import math
-from pathlib import Path
 
 import numpy as np
-from safetensors.numpy import load_file
-
-from .graph import BLOCKS, WIDTH
 
 # The page's defaults.
 SAMPLER = {"temperature": 1.0, "top_k": 20, "top_p": 1.0, "presence_penalty": 2.0, "seed": 0}
 MAX_NEW_TOKENS = 256
-BLOCK = 12  # one-based
-
-
-def steering(terms, blocks=(BLOCK,)):
-    """The additions [blocks, hidden] of fits at strengths, terms = [(fit folder, strength)]: strength * R[l] *
-    v[l] / |v[l]| at each chosen one-based block, summed over fits; None when every strength is 0. Each fit's term is
-    added in double precision and the sum rounded to float32, as the page's Float32Array does."""
-    if not blocks or len(set(blocks)) != len(blocks) or not all(1 <= b <= BLOCKS for b in blocks):
-        raise ValueError(f"choose distinct blocks from 1 to {BLOCKS}")
-    if all(strength == 0 for _, strength in terms):
-        return None
-    rows = np.zeros((BLOCKS, WIDTH), np.float32)
-    for folder, strength in terms:
-        fit = load_file(Path(folder) / "fit.safetensors")
-        scale = fit["reference"].astype(np.float64) / fit["norms"]
-        vectors = (fit["directions"] * scale[:, None]).astype(np.float32)
-        for b in blocks:
-            rows[b - 1] = rows[b - 1] + strength * vectors[b - 1].astype(np.float64)
-    return rows
 
 
 def mulberry32(seed):
@@ -56,7 +33,11 @@ def sampler(temperature, top_k, top_p, presence_penalty, seed):
     def pick(logits):
         for token in seen:
             logits[token] -= presence_penalty
-        top = np.argsort(-logits, kind="stable")[:top_k]  # ties keep the lower token id first
+        # The top_k largest in the order of a stable sort of the whole vocabulary (ties keep the lower token id
+        # first), sorting only the tokens at or above the k-th largest value.
+        k = min(top_k, logits.size)
+        kept = np.flatnonzero(logits >= np.partition(logits, logits.size - k)[logits.size - k])
+        top = kept[np.argsort(-logits[kept], kind="stable")][:top_k]
         values = logits[top].astype(np.float64)
         weights = [math.exp((v - values[0]) / temperature) for v in values]
         total = sum(weights)

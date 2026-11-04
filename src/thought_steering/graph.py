@@ -8,7 +8,6 @@ is that sum inside block l+1's input norm, or inside the final norm for the last
 the last position of each call as `block_outputs` [batch, blocks, hidden].
 """
 
-import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -20,8 +19,7 @@ REPO = "onnx-community/Qwen3.5-0.8B-ONNX-OPT"
 REVISION = "fafab72d87a9e6be3925b38caf48286d2838f2d0"
 VARIANTS = ["q4f16", "q4"]  # q4f16 computes in 16-bit floats, and the page uses q4 on GPUs without them
 BLOCKS, WIDTH = 24, 1024
-# The live page's graph file name: the version of the surgery (5) and the revision it edits.
-LIVE_NAME = "decoder_model_merged_{variant}_steered_" + REVISION[:8] + "_s5.onnx"
+SURGERY = 5  # the version of steered_decoder, recorded in the fits and in the live graph's file name
 
 
 def fetch(name):
@@ -71,23 +69,14 @@ def steered_decoder(variant="q4f16", path=None):
     return model
 
 
-def live_sha256(model, variant):
-    """SHA-256 of the graph as the page serves it: the same graph with its weights' file renamed after it."""
-    copy = onnx.ModelProto.FromString(model.SerializeToString())
-    data = LIVE_NAME.format(variant=variant) + "_data"
-    for tensor in copy.graph.initializer:
-        for entry in tensor.external_data:
-            if entry.key == "location":
-                entry.value = data
-    return hashlib.sha256(copy.SerializeToString()).hexdigest()
-
-
 class Runner:
     """The steered decoder and its token embedding in ONNX Runtime (CPU), with explicit recurrent and attention
     state, as the page runs them in the browser."""
 
     def __init__(self, variant="q4f16", threads=0):
         import onnxruntime as ort
+
+        self.variant = variant
 
         def session(model, folder):
             options = ort.SessionOptions()

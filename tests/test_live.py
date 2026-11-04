@@ -1,19 +1,21 @@
 """Checks against the live page's files. The steered-model test downloads the 0.58 GB model once."""
 
+import hashlib
 import json
 from pathlib import Path
 
 import numpy as np
+import onnx
 import pytest
 
 from thought_steering import graph
 from thought_steering.chat import sampler
-from thought_steering.fit import data_sha256
+from thought_steering.fit import data_sha256, read_lines
 from thought_steering.pairs import build
 from thought_steering.prompt import Tokenizer
 
 HERE = Path(__file__).parent
-# SHA-256 of the graphs the page serves (decoder_model_merged_*_steered_fafab72d_s5.onnx).
+# SHA-256 of the graphs the page serves.
 LIVE_GRAPHS = {"q4f16": "c4cd3acd70d4175c91caecb7a0f6e6627a6f2b9b577fe149bf8d1dd4496145f3",
                "q4": "2911e7764302ee7827a9667340a7ad7ac09c1190412e9b91a08a75d9ff4ecb0a"}
 # The data_sha256 of each live fit's fit.json.
@@ -34,15 +36,34 @@ def tokenizer():
     return Tokenizer()
 
 
+def live_sha256(model, variant):
+    """SHA-256 of the graph as the page serves it: the same graph with its weights' file renamed after it. The page's
+    file name holds the revision the surgery edits and the surgery's version."""
+    copy = onnx.ModelProto()
+    copy.CopyFrom(model)
+    data = f"decoder_model_merged_{variant}_steered_{graph.REVISION[:8]}_s{graph.SURGERY}.onnx_data"
+    for tensor in copy.graph.initializer:
+        for entry in tensor.external_data:
+            if entry.key == "location":
+                entry.value = data
+    return hashlib.sha256(copy.SerializeToString()).hexdigest()
+
+
+def logits(s):
+    """Page-checked test logits over 3000 tokens, with ties, for draw s."""
+    i = np.arange(3000)
+    return (((i * 7919 + s * 104729) % 97) / 8 + ((i * 31) % 13) / 1024).astype(np.float32)
+
+
 @pytest.mark.parametrize("variant", graph.VARIANTS)
 def test_steered_graph_is_the_live_one(variant):
-    assert graph.live_sha256(graph.steered_decoder(variant), variant) == LIVE_GRAPHS[variant]
+    assert live_sha256(graph.steered_decoder(variant), variant) == LIVE_GRAPHS[variant]
 
 
 def test_contrast_data_is_what_the_live_fits_read(tmp_path):
     """The files `pairs` writes hash, as fit.json records them, to the live fits' data_sha256."""
     for path in build(tmp_path):
-        assert data_sha256(path.read_bytes()) == LIVE_DATA[path.stem], path.stem
+        assert data_sha256(read_lines(path)) == LIVE_DATA[path.stem], path.stem
 
 
 def test_sampler_draws_the_page_tokens():
@@ -50,10 +71,8 @@ def test_sampler_draws_the_page_tokens():
     page = {(0, 1.0, 20, 1.0, 2.0): [1419, 304, 2584, 790, 1130, 597, 2586, 2344, 259, 2248, 1133, 1279],
             (7, 0.7, 50, 0.9, 1.5): [837, 2826, 511, 1469, 1324, 1470, 2198, 2053, 2975, 369, 1715, 600],
             (123, 1.3, 5, 0.5, -1.0): [1128, 304, 2293, 499, 2488, 985, 2683, 1180, 2878, 2345, 1812, 2540]}
-    i = np.arange(3000)
     for (seed, temperature, top_k, top_p, penalty), expected in page.items():
         pick = sampler(temperature, top_k, top_p, penalty, seed)
-        logits = lambda s: (((i * 7919 + s * 104729) % 97) / 8 + ((i * 31) % 13) / 1024).astype(np.float32)  # noqa: E731
         assert [pick(logits(s)) for s in range(len(expected))] == expected
 
 

@@ -5,9 +5,12 @@ import sys
 import time
 from pathlib import Path
 
-from .chat import BLOCK, MAX_NEW_TOKENS, SAMPLER
-from .graph import VARIANTS
-from .pairs import ATTRIBUTES
+from .chat import MAX_NEW_TOKENS, SAMPLER, reply
+from .fit import fit
+from .graph import VARIANTS, Runner
+from .pairs import ATTRIBUTES, build
+from .prompt import Tokenizer
+from .steer import BLOCK, steering
 
 NAMES = ["reframe", *ATTRIBUTES]
 
@@ -20,19 +23,14 @@ def strength_term(text):
 
 
 def chat(args):
-    from .chat import reply, steering
-    from .graph import Runner
-    from .prompt import Tokenizer
-
     terms = [(Path(args.fits) / name, s) for name, s in [("reframe", args.strength), *args.attribute]]
     rows = steering(terms, args.blocks)
     tokenizer, runner, messages = Tokenizer(), Runner(args.variant), []
-    options = {"seed": args.seed, "max_new_tokens": args.max_tokens}
     message = args.message or ask()
     while message:  # each reply sees the conversation so far
         messages.append({"role": "user", "content": message})
         text = ""
-        for piece in reply(runner, tokenizer, messages, rows, **options):
+        for piece in reply(runner, tokenizer, messages, rows, args.max_tokens, seed=args.seed):
             print(piece, end="", flush=True)
             text += piece
         print()
@@ -40,7 +38,6 @@ def chat(args):
             break
         messages.append({"role": "assistant", "content": text})
         message = ask()
-    return 0
 
 
 def ask():
@@ -75,22 +72,17 @@ def main():
     talking.add_argument("--seed", type=int, default=SAMPLER["seed"])
     talking.add_argument("--max-tokens", type=int, default=MAX_NEW_TOKENS)
     for sub in (fitting, talking):
-        sub.add_argument("--variant", default="q4f16", choices=VARIANTS,
-                         help="the 4-bit graph: q4f16 (default) or q4, which computes in 32-bit floats")
+        sub.add_argument("--variant", default="q4f16", choices=VARIANTS, help="q4 computes in 32-bit floats")
     args = parser.parse_args()
     if args.command == "pairs":
-        from .pairs import build
         build(args.out)
     elif args.command == "fit":
-        from .fit import fit
-        from .graph import Runner
-        from .prompt import Tokenizer
         tokenizer, runner = Tokenizer(), Runner(args.variant)  # built once for every name
         for name in args.names or ["reframe"]:
             start, out = time.perf_counter(), Path(args.out) / name
-            manifest = fit(Path(args.data) / f"{name}.jsonl", out, args.variant, tokenizer, runner)
+            manifest = fit(Path(args.data) / f"{name}.jsonl", out, tokenizer, runner)
             print(f"{out / 'fit.safetensors'}: {manifest['rows']} rows, {manifest['forwards']} texts read, "
                   f"{time.perf_counter() - start:.0f} s")
     else:
-        return chat(args)
+        chat(args)
     return 0

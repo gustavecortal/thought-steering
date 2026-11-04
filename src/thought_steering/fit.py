@@ -6,7 +6,7 @@ Per block l:
     d(row)   = h(positive) - h(negative)
     v[l]     = the mean over situations of the mean d of their rows
     R[l]     = the lower median, over distinct contexts, of the norm of block l's output at the context's last token
-Steering at strength s adds s * R[l] * v[l] / |v[l]| (chat.py), so s is a fraction of a typical activation's norm.
+Steering at strength s adds s * R[l] * v[l] / |v[l]| (steer.py), so s is a fraction of a typical activation's norm.
 """
 
 import hashlib
@@ -31,10 +31,14 @@ def side_mean(side, h):
     return h(side) if isinstance(side, str) else sum(side_mean(s, h) for s in side) / len(side)
 
 
-def data_sha256(data):
+def read_lines(path):
+    """The rows of a contrast data file, as bytes without line endings."""
+    return [line.rstrip(b"\r") for line in Path(path).read_bytes().split(b"\n") if line.strip()]
+
+
+def data_sha256(lines):
     """The hash the fits record for a contrast data file: its rows joined with CRLF line endings, as the live fits'
     files were written on Windows, so the same rows give the same hash on any system."""
-    lines = [line.rstrip(b"\r") for line in data.split(b"\n") if line.strip()]
     return hashlib.sha256(b"".join(line + b"\r\n" for line in lines)).hexdigest()
 
 
@@ -64,23 +68,23 @@ def estimate(rows, tokenizer, runner):
     return {"directions": directions, "norms": norms, "reference": reference}, forwards, len(context_norms)
 
 
-def fit(data, out, variant="q4f16", tokenizer=None, runner=None):
+def fit(data, out, tokenizer=None, runner=None):
     """Fits the data file's direction and writes out/fit.safetensors and out/fit.json."""
-    data = Path(data).read_bytes()
-    rows = [json.loads(line) for line in data.decode("utf-8").split("\n") if line.strip()]
-    tokenizer = tokenizer or Tokenizer()
-    tensors, forwards, contexts = estimate(rows, tokenizer, runner or graph.Runner(variant))
+    lines = read_lines(data)
+    rows = [json.loads(line) for line in lines]
+    tokenizer, runner = tokenizer or Tokenizer(), runner or graph.Runner()
+    tensors, forwards, contexts = estimate(rows, tokenizer, runner)
     # The live fits' manifest: what the fit read, and the counts.
-    fingerprint = {"schema": 3, "data_sha256": data_sha256(data), "model": MODEL, "identity": REVISION,
+    fingerprint = {"schema": 3, "data_sha256": data_sha256(lines), "model": MODEL, "identity": REVISION,
                    **tokenizer.sha256, "enable_thinking": False, "site": "decoder block output, before the final norm",
                    "extraction": "final candidate token; calibration at final prefix token",
-                   "graph": f"{graph.REPO}@{graph.REVISION}", "variant": variant, "surgery": 5,
+                   "graph": f"{graph.REPO}@{graph.REVISION}", "variant": runner.variant, "surgery": graph.SURGERY,
                    "runtime": f"onnxruntime {version('onnxruntime')} CPU"}
     manifest = {"fingerprint": fingerprint, "groups": len({r["group_id"] for r in rows}), "rows": len(rows),
                 "forwards": forwards, "context_prefixes": contexts}
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    save_file({k: np.ascontiguousarray(v) for k, v in tensors.items()}, out / "fit.safetensors.tmp")
+    save_file(tensors, out / "fit.safetensors.tmp")
     os.replace(out / "fit.safetensors.tmp", out / "fit.safetensors")
     (out / "fit.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8", newline="\n")
     return manifest

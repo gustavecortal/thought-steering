@@ -41,7 +41,8 @@ The model is [onnx-community's 4-bit ONNX export](https://huggingface.co/onnx-co
 | [`src/thought_steering/pairs.py`](src/thought_steering/pairs.py) | Contrast data from Cognitive Reframing Pairs |
 | [`src/thought_steering/graph.py`](src/thought_steering/graph.py) | The steered graph and its runner |
 | [`src/thought_steering/fit.py`](src/thought_steering/fit.py) | The fit of a direction |
-| [`src/thought_steering/chat.py`](src/thought_steering/chat.py) | Steering vectors, the page's sampler and replies |
+| [`src/thought_steering/steer.py`](src/thought_steering/steer.py) | Steering vectors from the fits |
+| [`src/thought_steering/chat.py`](src/thought_steering/chat.py) | The page's sampler and replies |
 | [`src/thought_steering/prompt.py`](src/thought_steering/prompt.py) | The tokenizer and chat template |
 | [`fits/`](fits) | The eight directions the page uses |
 | [`tests/test_live.py`](tests/test_live.py) | Checks against the live page's files |
@@ -53,7 +54,7 @@ uv run thought-steering pairs
 uv run thought-steering fit reframe
 ```
 
-`pairs` downloads the dataset and writes the contrast data to `data/`. `fit` reads it through the steered graph and writes `fits/reframe/fit.safetensors`, in under 3 minutes on the same processor. The result is byte for byte the file the page uses, with ONNX Runtime 1.30 or 1.31. `fit` also takes the attribute names, such as `fit empathy`.
+`pairs` downloads the dataset and writes the contrast data to `data/`. `fit` reads it through the steered graph and writes `fits/reframe/fit.safetensors`, in under 3 minutes on the same processor. The result is byte for byte the file the page uses, with ONNX Runtime 1.31. `fit` also takes the attribute names, such as `fit empathy`.
 
 ## License
 
