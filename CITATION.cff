@@ -13,10 +13,14 @@ license: MIT
 date-released: "2026-11-04"
 keywords:
   - activation steering
+  - steering vectors
+  - representation engineering
+  - interpretability
   - contrastive activation addition
   - cognitive reframing
   - language models
-  - ONNX Runtime
+  - ONNX
+  - WebGPU
   - Qwen3.5
 references:
   - type: conference-paper
@@ -54,3 +58,29 @@ references:
     collection-title: "Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
     year: 2023
     url: "https://aclanthology.org/2023.acl-long.555/"
+  - type: article
+    title: "Representation Engineering: A Top-Down Approach to AI Transparency"
+    authors:
+      - family-names: Zou
+        given-names: Andy
+      - name: "et al."
+    year: 2023
+    url: "https://arxiv.org/abs/2310.01405"
+  - type: conference-paper
+    title: "Extracting Latent Steering Vectors from Pretrained Language Models"
+    authors:
+      - family-names: Subramani
+        given-names: Nishant
+      - family-names: Suresh
+        given-names: Nivedita
+      - family-names: Peters
+        given-names: Matthew
+    collection-title: "Findings of the Association for Computational Linguistics: ACL 2022"
+    year: 2022
+    url: "https://aclanthology.org/2022.findings-acl.48/"
+  - type: data
+    title: "Cognitive Reframing Pairs"
+    authors:
+      - family-names: Cortal
+        given-names: Gustave
+    url: "https://huggingface.co/datasets/gustavecortal/cognitive-reframing-pairs"
