@@ -8,20 +8,21 @@
 
 ## Quick start
 
-With [uv](https://docs.astral.sh/uv/getting-started/installation/):
+With [uv](https://docs.astral.sh/uv/getting-started/installation/), which installs Python 3.12 or later if needed:
 
 ```bash
 git clone https://github.com/gustavecortal/thought-steering.git
 cd thought-steering
-uv run thought-steering chat "I failed my driving test again. Maybe I just can't learn things." --strength 0.3
+uv run thought-steering chat "I failed my driving test again. Maybe I just can't learn things." --strength 0.6
+uv run thought-steering chat "I failed my driving test again. Maybe I just can't learn things." --strength 0
 ```
 
-The first run downloads the 4-bit model from Hugging Face (0.58 GB). Replies then run on the CPU, about 6 tokens a second on a 16-thread desktop processor.
+The first run downloads the 4-bit model from Hugging Face (0.58 GB). Replies then run on the CPU, about 6 tokens a second on a 16-thread desktop processor. Both replies use the same seed, so the second is the unsteered reply the first is compared with.
 
-- `--strength 0` gives the unsteered reply, and `--strength -0.3` steers away from reframing.
+- Negative strengths steer away from reframing. The clip above uses +0.6 and -0.3, since at -0.6 its reply lost coherence.
 - `--blocks 12 16` steers two blocks.
-- `--attribute empathy=0.2` adds the direction of one reframing attribute.
-- Without a message, `chat` holds a conversation.
+- `--attribute empathy=0.2` adds the direction of one reframing attribute: actionability, empathy, positivity, rationality, readability, specificity or thinking_trap_addressing.
+- `--seed` changes the sampled reply, and without a message, `chat` holds a conversation.
 
 `uv run pytest` checks the steered model, the contrast data and the sampler against the live demo.
 
@@ -63,7 +64,7 @@ uv run thought-steering pairs
 uv run thought-steering fit reframe
 ```
 
-`pairs` downloads the dataset and writes the contrast data to `data/`. `fit` reads it through the steered graph and overwrites `fits/reframe/`. It takes under 4 minutes on the same processor. Its `fit.safetensors` is byte for byte the file the live demo uses (checked with ONNX Runtime 1.30 and 1.31). `fit` also takes the attribute names, such as `fit empathy`.
+`pairs` downloads the dataset and writes the contrast data to `data/`. `fit` reads it through the steered graph and overwrites `fits/reframe/`. It takes under 4 minutes on the same processor. Its `fit.safetensors` is byte for byte the file the live demo uses (checked with ONNX Runtime 1.30 and 1.31). Its `fit.json` records the ONNX Runtime version you ran. `fit` also takes the attribute names, such as `fit empathy`.
 
 ## License
 

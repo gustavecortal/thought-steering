@@ -62,15 +62,17 @@ def main():
     talking = commands.add_parser("chat", help="steered replies; without a message, a conversation")
     talking.add_argument("message", nargs="?")
     talking.add_argument("--strength", type=float, default=0.3,
-                         help="the reframe direction's length as a fraction of the block's median activation norm; "
-                              "negative points away from the reframes (default 0.3)")
+                         help="the reframe direction's length as a fraction of the block's median activation norm, "
+                              "negative to point away from the reframes (default 0.3)")
     talking.add_argument("--blocks", type=int, nargs="+", default=[BLOCK],
                          help=f"one-based blocks to steer (default {BLOCK})")
     talking.add_argument("--attribute", type=strength_term, action="append", default=[], metavar="NAME=STRENGTH",
                          help="also steer along an attribute's direction, for example empathy=0.2")
-    talking.add_argument("--fits", default="fits")
-    talking.add_argument("--seed", type=int, default=SAMPLER["seed"])
-    talking.add_argument("--max-tokens", type=int, default=MAX_NEW_TOKENS)
+    talking.add_argument("--fits", default="fits", help="the folder holding the fits (default fits)")
+    talking.add_argument("--seed", type=int, default=SAMPLER["seed"],
+                         help=f"seed of the sampler: the same seed gives the same reply (default {SAMPLER['seed']})")
+    talking.add_argument("--max-tokens", type=int, default=MAX_NEW_TOKENS,
+                         help=f"longest reply, in tokens (default {MAX_NEW_TOKENS})")
     for sub in (fitting, talking):
         sub.add_argument("--variant", default="q4f16", choices=VARIANTS, help="q4 computes in 32-bit floats")
     args = parser.parse_args()
@@ -80,6 +82,7 @@ def main():
         tokenizer, runner = Tokenizer(), Runner(args.variant)  # built once for every name
         for name in args.names or ["reframe"]:
             start, out = time.perf_counter(), Path(args.out) / name
+            print(f"fitting {name}: reading its texts through the steered graph, a few minutes on a CPU", flush=True)
             manifest = fit(Path(args.data) / f"{name}.jsonl", out, tokenizer, runner)
             print(f"{out / 'fit.safetensors'}: {manifest['rows']} rows, {manifest['forwards']} texts read, "
                   f"{time.perf_counter() - start:.0f} s")
