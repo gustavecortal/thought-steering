@@ -1,6 +1,6 @@
 # thought steering
 
-[thought steering](https://gustavecortal.com/thought-steering/) is contrastive activation steering that sets how much a language model reframes negative thoughts. This repository fits the steering on Qwen3.5-0.8B, the model of the live demo, and runs it from the command line.
+[thought steering](https://gustavecortal.com/thought-steering/) is contrastive activation steering that sets how much a language model reframes negative thoughts. This repository fits the steering on Qwen3.5-0.8B, the model of the [live demo](https://gustavecortal.com/thought-steering/), and runs it from the command line.
 
 <p align="center">
   <a href="https://gustavecortal.com/thought-steering/"><img src="docs/demo.webp" width="720" alt="The same negative thought answered with steering off, at strength +0.6 (more reframing) and at -0.3 (less reframing)"></a>
